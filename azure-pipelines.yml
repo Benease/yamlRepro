@@ -1,0 +1,123 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+#trigger:
+#- main
+
+#define multiple branch names to trigger builds
+trigger:
+- feature/*
+- bugfix/*
+
+variables:
+  buildConfiguration: 'Release'
+  vmImageName: 'vs2017-win2016'
+  functionAppName: 'yamlRepro'
+  azureSubscription: '7bbc894f-5222-44bc-ba09-f5ca0c67bc39'
+  workingDirectory: '$(System.DefaultWorkingDirectory)/MyHealth.Fitbit.Body'
+  projectName: 'MyHealth.Fitbit.Body'
+
+stages:
+  - stage: Build
+    displayName: Build Stage
+    jobs:
+      - job: Build
+        displayName: Build MyHealth.Fitbit.Body
+        pool:
+          vmImage: $(vmImageName)
+
+steps:
+- task: DotNetCoreCLI@2
+  displayName: Restore
+  inputs:
+   command: 'restore'
+   feedsToUse: 'select'
+   vstsFeed: '<feed-id>'
+   projects: '**/*.csproj'
+- task: DotNetCoreCLI@2
+  displayName: Build
+  inputs:
+   command: 'build'
+   projects: '**/*.csproj'
+   arguments: --configuration $(buildConfiguration)
+
+- task: DotNetCoreCLI@2
+  displayName: Run Unit Tests
+  inputs:
+   command: 'test'
+   projects: '**/*UnitTests/*.csproj'
+   arguments: '--configuration $(buildConfiguration) /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.SourcesDirectory)/TestResults/Coverage/'
+   publishTestResults: true
+
+- script: |
+    dotnet tool install -g dotnet-reportgenerator-globaltool
+    reportgenerator -reports:$(Build.SourcesDirectory)/TestResults/Coverage/coverage.cobertura.xml -targetdir:$(Build.SourcesDirectory)/CodeCoverage -reporttypes:HtmlInline_AzurePipelines;Cobertura
+    displayName: Create Code coverage report
+- task: PublishCodeCoverageResults@1
+  displayName: 'Publish Code Coverage'
+  inputs:
+    codeCoverageTool: Cobertura
+    summaryFileLocation: '$(Build.SourcesDirectory)/**/coverage.cobertura.xml'
+    reportDirectory: '$(Build.SourcesDirectory)/TestResults/Coverage/'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#pool:
+# vmImage: ubuntu-latest
+
+#steps:
+#- script: echo Hello, world!
+#  displayName: 'Run a one-line script'
+
+#- script: |
+#    echo Add other tasks to build, test, and deploy your project.
+#    echo See https://aka.ms/yaml
+#  displayName: 'Run a multi-line script'
